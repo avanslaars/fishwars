@@ -1,0 +1,25 @@
+{
+  "name": "fishwars",
+  "version": "1.0.0",
+  "description": "Star Wars Themed Go Fish",
+  "main": "pages/index.js",
+  "repository": "git@github.com:avanslaars/fishwars.git",
+  "author": "Andy Van Slaars & John Lindquist",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "crocks": "^0.2.0",
+    "next": "beta",
+    "ramda": "^0.23.0",
+    "react-redux": "^5.0.2",
+    "redux": "^3.6.0",
+    "redux-thunk": "^2.2.0"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-decorators-legacy": "^1.3.4"
+  }
+}
