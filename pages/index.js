@@ -1,8 +1,8 @@
 import React, {Component} from 'react'
-import { curry } from 'ramda'
+import { bind, curry } from 'ramda'
 import 'isomorphic-fetch'
 
-const loadPeople = (people) => (state, props) => ({people: people, isLoading: false})
+const loadPeople = curry((people, state, props) => ({people: people, isLoading: false}))
 
 export default class App extends Component {
   state = {
@@ -11,23 +11,11 @@ export default class App extends Component {
   }
 
   componentDidMount() {
-    // Works
-    // fetch('https://swapi-json-server-ddpsgpqivc.now.sh/people')
-    //   .then(res => res.json())
-    //   .then(p => loadPeople(p))
-    //   .then(fn => this.setState(fn))
-
-    //Works
+    const setState = bind(this.setState, this)
     fetch('https://swapi-json-server-ddpsgpqivc.now.sh/people')
       .then(res => res.json())
       .then(loadPeople)
-      .then(fn => this.setState(fn))
-
-    //Doesn't work - using this.setState without wrapping it in a fn
-    // fetch('https://swapi-json-server-ddpsgpqivc.now.sh/people')
-    //   .then(res => res.json())
-    //   .then(loadPeople)
-    //   .then(this.setState)
+      .then(setState)
   }
 
   render () {
