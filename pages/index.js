@@ -1,6 +1,6 @@
 import React, {Component} from 'react'
-import { bind, curry } from 'ramda'
-import 'isomorphic-fetch'
+import { bind, curry, prop } from 'ramda'
+import axios from 'axios'
 
 const loadPeople = curry((people, state, props) => ({people: people, isLoading: false}))
 
@@ -12,8 +12,8 @@ export default class App extends Component {
 
   componentDidMount() {
     const setState = bind(this.setState, this)
-    fetch('https://swapi-json-server-ddpsgpqivc.now.sh/people')
-      .then(res => res.json())
+    axios.get('https://swapi-json-server-ddpsgpqivc.now.sh/people')
+      .then(prop('data'))
       .then(loadPeople)
       .then(setState)
   }
