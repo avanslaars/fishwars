@@ -1,19 +1,13 @@
 import React, {Component} from 'react'
 import Link from 'next/link'
-import { bind, curry, prop, compose, identity } from 'ramda'
-import crocks from 'crocks'
+import { bind, curry, prop, compose, identity, isEmpty, useWith, apply } from 'ramda'
 import axios from 'axios'
 import localforage from 'localforage'
 import CharacterView from '../components/CharacterView'
 
-const {Async, ifElse, isNil, tap, isEmpty} = crocks
-const axTask = Async.fromPromise(axios.get)
-const lfTask = Async.fromPromise(localforage.getItem)
-const loadChars = (setter) => axTask('https://swapi-json-server-ddpsgpqivc.now.sh/people?_limit=20')
-  .map(compose(setter, charactersLoaded, prop('data')))
-
-const charactersLoaded = curry((people, state, props) => ({people: people, isLoading: false}))
 const chooseCharacter = curry((char, state, props) => isEmpty(char) ? state : ({chosenChar: char}))
+const createMountState = (peeps, char) => ({people: peeps, isLoading: false, chosenChar: char})
+const promisesToMountState = apply(useWith(createMountState, [prop('data'), JSON.parse]))
 
 export default class FishWars extends Component {
   state = {
@@ -24,26 +18,11 @@ export default class FishWars extends Component {
 
   componentDidMount() {
     const setState = bind(this.setState, this)
-    // This...
-    loadChars(setState)
-      .chain(() => lfTask('character'))
-      .map(ifElse(isNil, () => Async.rejected('some default'), identity))
-      .map(compose(setState, chooseCharacter, JSON.parse))
-      .coalesce(() => 'Error', () => 'Success') // Determine if real error, or known error from call to reject
-      .fork(console.error, console.log)
-
-    // ... replaces this :)
-    // axios.get('https://swapi-json-server-ddpsgpqivc.now.sh/people?_limit=20')
-    //   .then(compose(charactersLoaded, prop('data')))
-    //   .then(setState)
-    //   // It would be ideal to branch here and NoOp if localforage returns nothing
-    //   .then(() => localforage.getItem('character')) // invoker?
-    //   .then(p => JSON.parse(p)) // use invoker and a tryCatch composed
-    //   .then(chooseCharacter)
-    //   .then(setState)
-
-
-
+    Promise.all([
+      axios.get('https://swapi-json-server-ddpsgpqivc.now.sh/people?_limit=20'),
+      localforage.getItem('character')
+    ]).then(promisesToMountState)
+      .then(setState)
   }
 
   handleCharSelect = curry((character, evt) => {
