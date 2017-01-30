@@ -1,23 +1,25 @@
 import React, {Component} from 'react'
-import { curry, bind } from 'ramda'
+import { compose, propOr, bind, objOf, tap } from 'ramda'
 import localforage from 'localforage'
 
-const setChar = curry((id, state, prop) => ({characterId: id}))
+const loadCharacter = compose(objOf('character'), JSON.parse)
+const log = tap(console.log)
 
 export default class PlayFish extends Component {
-  state = {}
+  state = {
+    character: {}
+  }
 
   componentDidMount() {
     const setState = bind(this.setState, this)
     localforage.getItem('character')
-      .then(setChar)
-      .then(setState)
+      .then(compose(setState, loadCharacter))
   }
 
   render() {
     return (
       <div>
-        Playing as {this.state.characterId}
+        Playing as {this.state.character.id}
       </div>
     )
   }
