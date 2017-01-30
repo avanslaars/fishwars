@@ -1,13 +1,22 @@
 import React, {Component} from 'react'
 import Link from 'next/link'
-import { bind, curry, prop, compose, identity, isEmpty, useWith, apply } from 'ramda'
+import { bind, curry, curryN, prop, compose, identity,
+  isEmpty, useWith, apply, unapply, tap, unless, eqProps } from 'ramda'
 import axios from 'axios'
 import localforage from 'localforage'
 import CharacterView from '../components/CharacterView'
 
+const SWAPI_URL = 'https://swapi-json-server-ddpsgpqivc.now.sh/people?_limit=20'
+
+const log = tap(console.log)
+const all = bind(Promise.all, Promise)
+
 const chooseCharacter = curry((char, state, props) => isEmpty(char) ? state : ({chosenChar: char}))
 const createMountState = (peeps, char) => ({people: peeps, isLoading: false, chosenChar: char})
 const promisesToMountState = apply(useWith(createMountState, [prop('data'), JSON.parse]))
+const loadData = useWith(unapply(all), [axios.get, localforage.getItem])
+const setItem = curry((propName, propValue) => localforage.setItem(propName, propValue))
+const saveCharacter = compose(setItem('character'), JSON.stringify)
 
 export default class FishWars extends Component {
   state = {
@@ -18,18 +27,20 @@ export default class FishWars extends Component {
 
   componentDidMount() {
     const setState = bind(this.setState, this)
-    Promise.all([
-      axios.get('https://swapi-json-server-ddpsgpqivc.now.sh/people?_limit=20'),
-      localforage.getItem('character')
-    ]).then(promisesToMountState)
-      .then(setState)
+    loadData(SWAPI_URL, 'character')
+      .then(compose(setState, promisesToMountState))
   }
 
   handleCharSelect = curry((character, evt) => {
-    localforage
-      .setItem('character', JSON.stringify(character))
-      .then(() => this.setState(chooseCharacter(character)))
+    this.setState(chooseCharacter(character))
   })
+
+  componentDidUpdate(prevProps, prevState) {
+    unless(
+      eqProps('chosenChar', this.state, prevState),
+      saveCharacter(this.state.chosenChar)
+    )
+  }
 
   render () {
     return (
